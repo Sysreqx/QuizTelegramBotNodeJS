@@ -1,0 +1,8 @@
+/node_modules/
+node_modules/
+/config/default.json5
+/.idea/jsLibraryMappings.xml
+/.idea/modules.xml
+/package-lock.json
+/.idea/vcs.xml
+/.idea/TelegramBotNodeJS.iml
