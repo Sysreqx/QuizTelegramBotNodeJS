@@ -52,7 +52,7 @@ db.connect().catch(console.error);
 
 
 let answers = [];
-// answers[0] = "Ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ";
+answers[0] = "Что-то пошло не так";
 // answers[1] = "Ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ";
 // answers[2] = "Ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ";
 // answers[3] = "Ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ ответ";
@@ -61,7 +61,8 @@ let replyOptions = {
 
     reply_markup: {
         resize_keyboard: true,
-        one_time_keyboard: true
+        one_time_keyboard: true,
+        inline_keyboard: []
     },
 };
 
@@ -101,11 +102,12 @@ bot.on('message', async msg => {
         let questionNumber = 1;
 
         // 20 october 2023
-        const originDate = 1697738400000;
+        const originDate = 1698019200000;
         const day = 86400000;
         const date = new Date();
         // here compare date
         questionNumber = Math.ceil((date.getTime() - originDate) / day);
+        // console.log(questionNumber);
 
         // @TODO compare last answerID with current question ID, if equals say "can't vote again"
         if (user) {
@@ -128,10 +130,16 @@ bot.on('message', async msg => {
 
         // [A]\n
         // ${answers[idx]}\n
-        delete replyOptions.reply_markup.inline_keyboard;
-        replyOptions.reply_markup.inline_keyboard = [];
+        replyOptions = {
 
-        answers.forEach((a, idx) => {
+            reply_markup: {
+                resize_keyboard: true,
+                one_time_keyboard: true,
+                inline_keyboard: []
+            },
+        }; // ebal v nozdry, inline_keyboard = [] in some reason doesn't work
+
+        await answers.forEach((a, idx) => {
            let letter = String.fromCharCode(idx + 65);
            let answ = a.toString();
 
@@ -140,12 +148,19 @@ bot.on('message', async msg => {
             // [
             //     { text: "A",  callback_data: "1"  }
             // ],
+
            let tmpArrLetterForKeyboard = [
                { text: letter,  callback_data: (idx + 1).toString() }
            ];
+
            replyOptions.reply_markup.inline_keyboard.push(tmpArrLetterForKeyboard);
 
+            // console.log("tmpArrLetterForKeyboard\n" + tmpArrLetterForKeyboard.text);
+            // console.log("replyOptions\n" + replyOptions);
+
         });
+
+        console.log(replyOptions);
 
         await bot.sendMessage(chatId,
             `Вопрос № ${questionNumber}\n\n${questionFromDB.text}\n\n${questionTextWithAnswersText}`,
