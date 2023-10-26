@@ -250,7 +250,9 @@ bot.on("callback_query", async msg => {
     }
 
     // After answer selection starts cron
-    cronTask.stop();
+    if (cronTask) {
+        cronTask.stop();
+    }
     cronTask = cron.schedule("*/1 * * * *", async () => {
         let replyOptions = {
 
