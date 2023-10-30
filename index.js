@@ -1,14 +1,8 @@
-// import express from "express";
-// import mongoose from "mongoose";
 import {MongoClient} from "mongodb";
 import TelegramBot from "node-telegram-bot-api";
 
 import config from "config";
-
 import cron from "node-cron";
-import {text} from "express";
-
-let cronTask;
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = config.get("token");
@@ -43,6 +37,10 @@ class DataBase {
         return await client.db("PMGQuizTelegramBotDB").collection("Users").findOne({ chat_id: chatId});
     }
 
+    async getAllUsers(client) {
+        return await client.db("PMGQuizTelegramBotDB").collection("Users").find({});
+    }
+
     async updateUserByChatId(client, chatId, updatedUser) {
         await client.db("PMGQuizTelegramBotDB").collection("Users").updateOne({ chat_id: chatId }, { $set: updatedUser });
     }
@@ -59,7 +57,6 @@ db.connect().catch(console.error);
 let answers = [];
 answers[0] = "Что-то пошло не так. Свяжитесь с менеджером/разработчиком";
 
-
 let replyOptions = {
 
     reply_markup: {
@@ -71,6 +68,23 @@ let replyOptions = {
 
 let questionNumber = 99;
 let correctAnswerNumber = 99;
+
+async function sendMessageToAllUsers() {
+    let usersPromise = await db.getAllUsers(client);
+    let users = await usersPromise.toArray();
+    // console.log(users);
+
+    for (let i = 0; i < users.length; i++) {
+        // console.log(users[i].chat_id);
+        await bot.sendMessage(users[i].chat_id, `Для вас доступен новый вопрос.\nОтправь мне команду "/start"`);
+    }
+}
+
+async function cronMessageSender() {
+    cron.schedule("*/1 * * * *", await sendMessageToAllUsers);
+}
+
+await cronMessageSender();
 
 
 // Listen for any kind of message. There are different kinds of
@@ -105,7 +119,7 @@ bot.on('message', async msg => {
         }
 
         // 20 october 2023
-        let originDate = 1698142703484;
+        let originDate = 1698642891787;
         // originDate = new Date().getTime(); // comment me, test purposes
         let day = 86400000; // change to minute for test purpose
         day = 60000; // minute
@@ -165,7 +179,7 @@ bot.on('message', async msg => {
                     one_time_keyboard: true,
                     inline_keyboard: []
                 },
-            }; // ebal v nozdry, inline_keyboard = [] in some reason doesn't work
+            }; // inline_keyboard = [] in some reason doesn't work
 
             await answers.forEach((a, idx) => {
                 let letter = String.fromCharCode(idx + 65);
@@ -249,34 +263,9 @@ bot.on("callback_query", async msg => {
         console.log(e);
     }
 
-    // After answer selection starts cron
-    if (cronTask) {
-        cronTask.stop();
-    }
-    cronTask = cron.schedule("*/1 * * * *", async () => {
-        let replyOptions = {
-
-            reply_markup: {
-                resize_keyboard: true,
-                one_time_keyboard: true,
-                inline_keyboard: [
-                    [{text: "Получить новый вопрос"}]
-                ]
-            },
-        };
-
-        await bot.sendMessage(chatId,
-            `Вы можете получить новый вопрос. Нажмите на кнопку`,
-            replyOptions);
-    });
-
-    if (answer.toString() === "0" ||
-        answer.toString() === "1" ||
-        answer.toString() === "2" ||
-        answer.toString() === "3") {
+    if (chatId) {
         await bot.sendMessage(chatId, `Спасибо за ваш ответ, мы его сохранили.\nСледующий вопрос будет доступен завтра.`);
     }
 
-    // console.log(msg);
     // console.log(answer);
 })
